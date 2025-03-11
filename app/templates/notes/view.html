@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Python Notes{% endblock %}
+
+{% block additional_head %}
+    <link rel="stylesheet" href="https://unpkg.com/retrolab/dist/style.css" />
+    <script src="https://unpkg.com/retrolab/dist/bundle.js"></script>
+    <style>
+        .notebook-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .jupyter-notebook {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+                </ol>
+            </nav>
+            
+            <h1>{{ title }}</h1>
+            
+            <div class="notebook-container">
+                <div id="jupyter-lite-container" class="jupyter-notebook">
+                    {{ html_content|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize JupyterLite
+        window.jupyterapp = new RetroLab({
+            container: document.getElementById('jupyter-lite-container'),
+            useBrowser: true,
+            collaborative: false
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,135 @@
+/* Base styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+footer {
+    margin-top: auto;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+/* Notebook styling */
+.notebook-content {
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+
+.notebook-content h1 {
+    font-size: 2.5rem;
+    margin-top: 2rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.notebook-content h2 {
+    font-size: 2rem;
+    margin-top: 1.8rem;
+    margin-bottom: 1rem;
+}
+
+.notebook-content h3 {
+    font-size: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+/* Code cells */
+.cell {
+    margin-bottom: 1.5rem;
+}
+
+.input_prompt, .output_prompt {
+    display: none;
+}
+
+.input_area {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+
+.input_area:hover {
+    background-color: #f0f0f0;
+}
+
+.output_area {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-left: 3px solid #007bff;
+    background-color: #f8f9fa;
+}
+
+/* Run button styling */
+.run-code-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.run-code-btn:hover {
+    background-color: #218838;
+}
+
+/* Code blocks within markdown cells */
+p code, li code {
+    background-color: #f1f1f1;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+pre {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 1rem;
+    overflow-x: auto;
+}
+
+/* Card styling for notebook list */
+.card {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .notebook-container {
+        padding: 15px 10px;
+    }
+    
+    .input_area, .output_area {
+        padding: 0.75rem;
+    }
+}

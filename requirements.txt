@@ -1,0 +1,33 @@
+# Flask and extensions
+Flask
+Flask-Assets
+Flask-Limiter
+Flask-WTF
+python-dotenv
+Werkzeug
+
+# Jupyter notebook processing
+nbconvert
+nbformat
+jupyter_client
+pyzmq
+
+# Asset management
+webassets
+jsmin
+cssmin
+
+# Testing
+pytest
+pytest-flask
+
+# Production
+gunicorn
+whitenoise
+
+# Security
+itsdangerous
+
+# JupyterLite
+jupyterlite-core
+jupyterlab>=4.0.0

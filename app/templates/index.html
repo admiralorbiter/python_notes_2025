@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Python Notes - Home{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="jumbotron p-5 mb-4 bg-light rounded-3">
+            <div class="container-fluid py-4">
+                <h1 class="display-5 fw-bold">Python Interactive Notes</h1>
+                <p class="col-md-8 fs-4">
+                    Welcome to the Python Interactive Notes platform. Choose a lesson below to begin learning!
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <h2>Available Lessons</h2>
+        
+        {% if notebooks %}
+            <div class="row">
+                {% for notebook in notebooks %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ notebook.title }}</h5>
+                            <p class="card-text text-muted">{{ notebook.id }}</p>
+                        </div>
+                        <div class="card-footer">
+                            <a href="{{ url_for('main.view_notebook', notebook_id=notebook.id) }}" class="btn btn-primary">View Lesson</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                No lessons available yet. Please check back later!
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
