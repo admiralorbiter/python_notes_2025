@@ -3,9 +3,10 @@ import os
 import json
 import nbformat
 from nbconvert import HTMLExporter
-from nbconvert.preprocessors import ExecutePreprocessor
+from nbconvert.preprocessors import ExecutePreprocessor, Preprocessor
 from flask import current_app
 from traitlets.config import Config
+import shutil
 
 # Global exporter object
 html_exporter = None
@@ -29,47 +30,61 @@ def init_notebook_service(app):
     app.logger.info('Notebook service initialized')
 
 def get_notebook_metadata(notebook_path):
-    """Extract metadata from a notebook file."""
-    try:
-        with open(notebook_path, 'r', encoding='utf-8') as f:
-            notebook_content = json.load(f)
+    """Get metadata from notebook file."""
+    with open(notebook_path, 'r', encoding='utf-8') as f:
+        notebook = nbformat.read(f, as_version=4)
+        
+        # Get title from first cell if it's markdown
+        title = None
+        if notebook.cells and notebook.cells[0].cell_type == 'markdown':
+            first_line = notebook.cells[0].source.split('\n')[0]
+            # Remove markdown heading symbols and whitespace
+            title = first_line.lstrip('#').strip()
+        
+        if not title:
+            # Fallback to filename
+            title = os.path.splitext(os.path.basename(notebook_path))[0]
             
-        # Extract basic metadata
-        metadata = {}
-        
-        # Get notebook title from the first markdown cell if it exists
-        if 'cells' in notebook_content and len(notebook_content['cells']) > 0:
-            first_cell = notebook_content['cells'][0]
-            if first_cell['cell_type'] == 'markdown' and first_cell['source']:
-                # Look for a title in the first line
-                first_line = first_cell['source'][0] if isinstance(first_cell['source'], list) else first_cell['source'].split('\n')[0]
-                if first_line.startswith('# '):
-                    metadata['title'] = first_line[2:].strip()
-        
-        # Use filename as fallback for title
-        if 'title' not in metadata:
-            metadata['title'] = os.path.splitext(os.path.basename(notebook_path))[0]
-            
-        return metadata
-        
-    except Exception as e:
-        current_app.logger.error(f"Error extracting metadata from {notebook_path}: {str(e)}")
-        return {'title': os.path.splitext(os.path.basename(notebook_path))[0]}
+        return {
+            'title': title,
+            'metadata': notebook.metadata
+        }
+
+class CodeCellPreprocessor(Preprocessor):
+    """Custom preprocessor to mark code cells as executable."""
+    
+    def preprocess_cell(self, cell, resources, cell_index):
+        """Preprocess cell to add executable markers."""
+        if cell['cell_type'] == 'code':
+            cell['source'] = f'<div class="code-cell">{cell["source"]}</div>'
+        return cell, resources
 
 def get_notebook_html(notebook_path):
-    """Convert notebook to JupyterLite compatible HTML."""
+    """Convert notebook to HTML with interactive features."""
     with open(notebook_path, 'r', encoding='utf-8') as f:
         notebook = nbformat.read(f, as_version=4)
     
-    # Configure the HTML exporter for JupyterLite compatibility
-    c = Config()
-    c.HTMLExporter.template_name = 'classic'
-    c.HTMLExporter.exclude_input_prompt = True
-    c.HTMLExporter.exclude_output_prompt = True
-    c.HTMLExporter.embed_images = True
+    # Configure the HTML exporter
+    html_exporter = HTMLExporter()
+    html_exporter.template_name = 'classic'
     
-    html_exporter = HTMLExporter(config=c)
+    # Remove the first cell if it's the same as the title
+    if notebook.cells and notebook.cells[0].cell_type == 'markdown':
+        first_cell_text = notebook.cells[0].source.strip()
+        if first_cell_text.startswith('# '):
+            notebook.cells.pop(0)
+    
+    # Convert notebook to HTML
     html_content, resources = html_exporter.from_notebook_node(notebook)
+    
+    # Save resources (images, etc.) if needed
+    if resources.get('outputs'):
+        static_dir = os.path.join(current_app.static_folder, 'notebooks')
+        os.makedirs(static_dir, exist_ok=True)
+        
+        for filename, data in resources['outputs'].items():
+            with open(os.path.join(static_dir, filename), 'wb') as f:
+                f.write(data)
     
     return html_content, resources
 

@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, current_app, abort, send_from_dire
 import os
 import glob
 from app.services.notebook_service import get_notebook_html, get_notebook_metadata
+import nbformat
 
 main_bp = Blueprint('main', __name__)
 
@@ -36,25 +37,27 @@ def index():
 @main_bp.route('/notes/<notebook_id>')
 def view_notebook(notebook_id):
     """Display a specific notebook."""
+    # Strip .ipynb extension if it's included in the URL
+    notebook_id = notebook_id.replace('.ipynb', '')
+    
     notebooks_dir = current_app.config['NOTEBOOKS_DIR']
     notebook_path = os.path.join(notebooks_dir, f"{notebook_id}.ipynb")
     
     if not os.path.isfile(notebook_path):
         abort(404)
     
+    # Get metadata first for the title
+    metadata = get_notebook_metadata(notebook_path)
+    title = metadata['title']
+    
     # Convert notebook to HTML
     html_content, resources = get_notebook_html(notebook_path)
-    
-    # Get metadata
-    metadata = get_notebook_metadata(notebook_path)
-    title = metadata.get('title', notebook_id)
     
     return render_template(
         'notes/view.html',
         notebook_id=notebook_id,
         title=title,
-        html_content=html_content,
-        pyscript_enabled=current_app.config.get('PYSCRIPT_ENABLED', True)
+        html_content=html_content
     )
 
 @main_bp.route('/static/notebooks/<path:filename>')

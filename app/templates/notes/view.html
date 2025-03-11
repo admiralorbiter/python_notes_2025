@@ -3,19 +3,88 @@
 {% block title %}{{ title }} - Python Notes{% endblock %}
 
 {% block additional_head %}
-    <link rel="stylesheet" href="https://unpkg.com/retrolab/dist/style.css" />
-    <script src="https://unpkg.com/retrolab/dist/bundle.js"></script>
+    <!-- Pyodide -->
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    
+    <!-- Add syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    
     <style>
         .notebook-container {
-            max-width: 1000px;
+            width: 100%;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
         
-        .jupyter-notebook {
-            border: 1px solid #ddd;
+        .notebook-content {
+            background: white;
+            padding: 20px;
             border-radius: 4px;
-            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .code-cell {
+            margin: 20px 0;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .code-cell pre {
+            margin: 0;
+            padding: 10px;
+            background: #f6f8fa;
+        }
+
+        .code-cell .output {
+            padding: 10px;
+            border-top: 1px solid #e1e4e8;
+            background: white;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+
+        .run-button {
+            float: right;
+            margin: 5px;
+            padding: 5px 10px;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .run-button:hover {
+            background: #0b5ed7;
+        }
+
+        .markdown-cell {
+            margin: 15px 0;
+        }
+
+        .markdown-cell h1 { font-size: 2em; margin-top: 1em; }
+        .markdown-cell h2 { font-size: 1.5em; margin-top: 0.83em; }
+        .markdown-cell h3 { font-size: 1.17em; margin-top: 0.67em; }
+        
+        .error-output {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 4px;
+        }
+
+        /* In-line code style */
+        code {
+            background: #f6f8fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: monospace;
         }
     </style>
 {% endblock %}
@@ -31,27 +100,103 @@
                 </ol>
             </nav>
             
-            <h1>{{ title }}</h1>
-            
             <div class="notebook-container">
-                <div id="jupyter-lite-container" class="jupyter-notebook">
-                    {{ html_content|safe }}
+                <h1 class="mb-4">{{ title }}</h1>
+                <div class="notebook-content">
+                    {{ html_content | safe }}
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize JupyterLite
-        window.jupyterapp = new RetroLab({
-            container: document.getElementById('jupyter-lite-container'),
-            useBrowser: true,
-            collaborative: false
-        });
+document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize Pyodide
+    let pyodide = null;
+    try {
+        pyodide = await loadPyodide();
+        console.log('Pyodide loaded successfully');
+    } catch (error) {
+        console.error('Error loading Pyodide:', error);
+    }
+
+    // Initialize syntax highlighting
+    hljs.highlightAll();
+    
+    // Function to create output element
+    function createOutputElement() {
+        const output = document.createElement('div');
+        output.className = 'output';
+        return output;
+    }
+
+    // Function to run code in a cell
+    async function runCode(codeElement, outputElement) {
+        if (!pyodide) {
+            outputElement.className = 'output error-output';
+            outputElement.textContent = 'Pyodide is not initialized. Please refresh the page.';
+            return;
+        }
+
+        try {
+            outputElement.textContent = 'Running...';
+            outputElement.className = 'output';
+            
+            const code = codeElement.textContent;
+            const result = await pyodide.runPython(code);
+            
+            if (result !== undefined) {
+                outputElement.textContent = result.toString();
+            } else {
+                // Check if there was any stdout
+                const stdout = pyodide.runPython('import sys; sys.stdout.getvalue()');
+                if (stdout) {
+                    outputElement.textContent = stdout;
+                } else {
+                    outputElement.textContent = 'Code executed successfully';
+                }
+            }
+        } catch (error) {
+            outputElement.className = 'output error-output';
+            outputElement.textContent = `Error: ${error.message}`;
+        }
+    }
+
+    // Process all code cells
+    document.querySelectorAll('pre code.python').forEach(codeBlock => {
+        // Create cell container
+        const cell = document.createElement('div');
+        cell.className = 'code-cell';
+        codeBlock.parentNode.replaceWith(cell);
+
+        // Create run button
+        const runButton = document.createElement('button');
+        runButton.textContent = 'Run';
+        runButton.className = 'run-button';
+        cell.appendChild(runButton);
+
+        // Move code block into cell
+        const pre = document.createElement('pre');
+        pre.appendChild(codeBlock);
+        cell.appendChild(pre);
+
+        // Create output area
+        const output = createOutputElement();
+        cell.appendChild(output);
+
+        // Add click handler
+        runButton.onclick = () => runCode(codeBlock, output);
     });
+
+    // Initialize Pyodide with print redirection
+    if (pyodide) {
+        await pyodide.runPython(`
+            import sys
+            import io
+            sys.stdout = io.StringIO()
+        `);
+    }
+});
 </script>
 {% endblock %}
