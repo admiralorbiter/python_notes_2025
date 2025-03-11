@@ -27,16 +27,38 @@
         }
 
         .code-cell {
+            position: relative;
             margin: 20px 0;
             border: 1px solid #e1e4e8;
             border-radius: 6px;
             overflow: hidden;
+            background: #f6f8fa;
+        }
+
+        .run-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 5px 15px;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 10;
+        }
+
+        .run-button:hover {
+            background: #0b5ed7;
         }
 
         .code-cell pre {
             margin: 0;
-            padding: 10px;
-            background: #f6f8fa;
+            padding: 15px;
+            padding-top: 40px; /* Make room for the run button */
+            background: transparent;
+            overflow-x: auto;
         }
 
         .code-cell .output {
@@ -45,21 +67,7 @@
             background: white;
             white-space: pre-wrap;
             font-family: monospace;
-        }
-
-        .run-button {
-            float: right;
-            margin: 5px;
-            padding: 5px 10px;
-            background: #0d6efd;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .run-button:hover {
-            background: #0b5ed7;
+            min-height: 24px;
         }
 
         .markdown-cell {
@@ -79,12 +87,17 @@
             border-radius: 4px;
         }
 
-        /* In-line code style */
+        /* Style for inline code */
         code {
             background: #f6f8fa;
             padding: 2px 4px;
             border-radius: 3px;
             font-family: monospace;
+        }
+
+        /* Add a subtle hover effect to code cells */
+        .code-cell:hover {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
     </style>
 {% endblock %}
@@ -121,9 +134,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.error('Error loading Pyodide:', error);
     }
 
-    // Initialize syntax highlighting
-    hljs.highlightAll();
-    
     // Function to create output element
     function createOutputElement() {
         const output = document.createElement('div');
@@ -163,30 +173,50 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Process all code cells
-    document.querySelectorAll('pre code.python').forEach(codeBlock => {
-        // Create cell container
-        const cell = document.createElement('div');
-        cell.className = 'code-cell';
-        codeBlock.parentNode.replaceWith(cell);
+    // Process all code cells - updated selector to catch all potential code blocks
+    document.querySelectorAll('.highlight pre, pre code, .input_area pre').forEach(codeBlock => {
+        // Only process Python code blocks
+        const code = codeBlock.textContent.trim();
+        if (code && (
+            code.includes('print') || 
+            code.includes('def ') || 
+            code.includes('import ') ||
+            code.includes('=') ||
+            code.includes('if ') ||
+            code.includes('for ') ||
+            code.includes('while ')
+        )) {
+            // Create cell container
+            const cell = document.createElement('div');
+            cell.className = 'code-cell';
 
-        // Create run button
-        const runButton = document.createElement('button');
-        runButton.textContent = 'Run';
-        runButton.className = 'run-button';
-        cell.appendChild(runButton);
+            // Get the parent element that should be replaced
+            const parentToReplace = codeBlock.closest('.highlight') || codeBlock.parentNode;
 
-        // Move code block into cell
-        const pre = document.createElement('pre');
-        pre.appendChild(codeBlock);
-        cell.appendChild(pre);
+            // Create run button
+            const runButton = document.createElement('button');
+            runButton.textContent = 'Run';
+            runButton.className = 'run-button';
 
-        // Create output area
-        const output = createOutputElement();
-        cell.appendChild(output);
+            // Create code container
+            const pre = document.createElement('pre');
+            pre.className = 'highlight';
+            pre.textContent = code;
 
-        // Add click handler
-        runButton.onclick = () => runCode(codeBlock, output);
+            // Create output area
+            const output = createOutputElement();
+
+            // Assemble the cell
+            cell.appendChild(runButton);
+            cell.appendChild(pre);
+            cell.appendChild(output);
+
+            // Replace the original element
+            parentToReplace.replaceWith(cell);
+
+            // Add click handler
+            runButton.onclick = () => runCode(pre, output);
+        }
     });
 
     // Initialize Pyodide with print redirection
@@ -195,6 +225,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             import sys
             import io
             sys.stdout = io.StringIO()
+            
+            # Pre-import common modules
+            import math
         `);
     }
 });
